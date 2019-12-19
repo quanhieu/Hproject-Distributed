@@ -1,0 +1,184 @@
+﻿
+@{
+    ViewBag.Title = "Product";
+}
+
+<div class="container" ng-app="myApp" ng-controller="myCtrl">
+    <div class="row">
+        <div class="col-sm-9">
+            <h2>Products</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-9">
+            <table id="productTable" class="table table-bordered table-condensed table-striped">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-show="loading">
+                        <td colspan="100%" align="center"><img src="~/Content/Images/loading.gif"></td>
+                    </tr>
+                    <tr ng-repeat="x in products">
+                        <td>{{x.ProductName}}</td>
+                        <td>{{x.Description}}</td>
+                        <td>{{x.Category.CategoryName}}</td>
+                        <td>{{x.Price}}</td>
+                        <td>
+                            <button class="btn btn-default" type="button" ng-click="getProduct(x.ProductId)">
+                                <span class="glyphicon glyphicon-edit"></span>
+                            </button>
+                            <button class="btn btn-default" type="button" ng-click="deleteProduct(x.ProductId)">
+                                <span class="glyphicon glyphicon-remove"></span>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <button type="button" id="addButton"
+                    class="btn btn-primary"
+                    ng-click="addClick()">
+                Add Product
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Product Information
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="name">Product Name</label>
+                        <input type="text" id="name"
+                               class="form-control" ng-model="pro.ProductName" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description"
+                               class="form-control" ng-model="pro.Description" />
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="description" class="form-control" ng-model="pro.Category" ng-options="x.CategoryName for x in categories">
+                            Choose a category
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Price</label>
+                        <input type="text" id="price"
+                               class="form-control" ng-model="pro.Price" />
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <div class="row">
+                        <div class="col-xs-12">
+                            <button type="button" class="btn btn-primary"
+                                    ng-click="updateClick()">
+                                {{addText}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts
+    {
+    <script>
+        var app = angular.module('myApp', []);
+        var url = "/api/Products/";
+        app.controller('myCtrl', function ($scope, $http) {
+            // Load entity list
+            $scope.loading = true;
+
+            $http.get("/api/Categories/").then(function (response) {
+                $scope.categories = response.data;
+                $scope.addClick();
+            });
+
+            // Reset entity update data
+            $scope.addClick = function () {
+                $scope.pro = new Object();
+                $scope.pro.Category = $scope.categories[0];
+                $scope.addText = "Add";
+            };
+
+
+            $http.get(url).then(function (response) {
+                $scope.products = response.data;
+                $scope.loading = false;
+            });
+
+            // Handle item update click
+            $scope.getProduct = function (id) {
+                $http.get(url + id).then(function (response) {
+                    $scope.pro = response.data;
+
+                    var i = $scope.categories.findIndex(function (e) {
+                        return e.CategoryId == $scope.pro.Category.CategoryId;
+                    });
+                    $scope.pro.Category = $scope.categories[i];
+
+                    $scope.addText = "Update";
+                });
+            };
+
+            // Handle add/update entity
+            $scope.updateClick = function () {
+                if ($scope.addText == "Add") {
+                    $http.post(url, $scope.pro).then(function (response) {
+                        $scope.products.push(response.data);
+                        $scope.addClick();
+                    }, function (response) {
+                        alert("Cannot insert new product.");
+                    });
+                }
+                else {
+                    $scope.pro.CategoryId = $scope.pro.Category.CategoryId;
+
+                    $http.put(url + $scope.pro.ProductId, $scope.pro).then(function (response) {
+                        var i = $scope.products.findIndex(function (element) {
+                            return element.ProductId == $scope.pro.ProductId;
+                        });
+                        $scope.products[i] = $scope.pro;
+                        $scope.addClick();
+                    }, function (response) {
+                        alert("Cannot update product.");
+                    });
+                }
+            };
+
+            // Handle delete entity
+            $scope.deleteProduct = function (id) {
+                $http.delete(url + id).then(function (response) {
+                    var i = $scope.products.findIndex(function (element) {
+                        return element.ProductId == id;
+                    });
+                    $scope.products.splice(i, 1);
+                }, function (response) {
+                    alert("Cannot delete product.");
+                });
+            };
+
+        });
+    </script>
+}

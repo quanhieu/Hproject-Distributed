@@ -1,0 +1,153 @@
+﻿
+@{
+    ViewBag.Title = "Category";
+}
+
+<div class="container" ng-app="myApp" ng-controller="myCtrl">
+    <div class="row">
+        <div class="col-sm-9">
+            <h2>Category</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-9">
+            <table id="productTable" class="table table-bordered table-condensed table-striped">
+                <thead>
+                    <tr>
+                        <th>Category Name</th>
+                        @* <th>Description</th>*@
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-show="loading">
+                        <td colspan="100%" align="center"><img src="~/Content/Images/loading.gif"></td>
+                    </tr>
+                    <tr ng-repeat="x in categories">
+                        <td>{{x.CategoryName}}</td>
+                        @*  <td>{{x.CategoryDescription}}</td>*@
+                        <td>
+                            <button class="btn btn-default" type="button" ng-click="getCategory(x.CategoryId)">
+                                <span class="glyphicon glyphicon-edit"></span>
+                            </button>
+                            <button class="btn btn-default" type="button" ng-click="deleteCategory(x.CategoryId)">
+                                <span class="glyphicon glyphicon-remove"></span>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <button type="button" id="addButton"
+                    class="btn btn-primary"
+                    ng-click="addClick()">
+                Add Category
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Category Information
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="name">Category Name</label>
+                        <input type="text" id="name"
+                               class="form-control" ng-model="cat.CategoryName" />
+                    </div>
+                    @*<div class="form-group">
+                            <label for="description">Description</label>
+                            <input type="text" id="description"
+                                   class="form-control" ng-model="cat.CategoryDescription" />
+                        </div>*@
+                </div>
+
+                <div class="panel-footer">
+                    <div class="row">
+                        <div class="col-xs-12">
+                            <button type="button" class="btn btn-primary"
+                                    ng-click="updateClick()">
+                                {{addText}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts
+    {
+    <script>
+        var app = angular.module('myApp', []);
+        var url = "/api/Categories/";
+        app.controller('myCtrl', function ($scope, $http) {
+            // Load category list
+            $scope.loading = true;
+            $http.get(url).then(function (response) {
+                $scope.categories = response.data;
+                $scope.loading = false;
+            });
+
+            // Handle item update click
+            $scope.getCategory = function (id) {
+                $http.get(url + id).then(function (response) {
+                    $scope.cat = response.data;
+                    $scope.addText = "Update";
+                });
+            };
+
+            // Reset category update data
+            $scope.addClick = function () {
+                $scope.cat = new Object();
+                $scope.addText = "Add";
+            };
+            $scope.addClick();
+
+            // Handle add/update category
+            $scope.updateClick = function () {
+                if ($scope.addText == "Add") {
+                    $http.post(url, $scope.cat).then(function (response) {
+                        $scope.categories.push(response.data);
+                        $scope.addClick();
+                    }, function (response) {
+                        alert("Cannot insert new category.");
+                    });
+                }
+                else {
+                    $http.put(url + $scope.cat.CategoryId, $scope.cat).then(function (response) {
+                        var i = $scope.categories.findIndex(function (element) {
+                            return element.CategoryId == $scope.cat.CategoryId;
+                        });
+                        $scope.categories[i] = $scope.cat;
+                        $scope.addClick();
+                    }, function (response) {
+                        alert("Cannot update category.");
+                    });
+                }
+            };
+
+            // Handle delete category
+            $scope.deleteCategory = function (id) {
+                $http.delete(url + id).then(function (response) {
+                    var i = $scope.categories.findIndex(function (element) {
+                        return element.CategoryId == id;
+                    });
+                    $scope.categories.splice(i, 1);
+                }, function (response) {
+                    alert("Cannot delete category");
+                });
+            };
+
+        });
+    </script>
+}
+

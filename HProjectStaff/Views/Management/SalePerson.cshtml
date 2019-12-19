@@ -1,0 +1,185 @@
+﻿
+@{
+    ViewBag.Title = "Staff";
+}
+<div class="container" ng-app="myApp" ng-controller="myCtrl">
+    <div class="row">
+        <div class="col-sm-9">
+            <h2>Staffs</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-9">
+            <table id="staffTable" class="table table-bordered table-condensed table-striped">
+                <thead>
+                    <tr>
+                        <th>Staff Name</th>
+                        @*<th>Address</th>*@
+                        <th>Phone</th>
+                        <th>Store</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-show="loading">
+                        <td colspan="100%" align="center"><img src="~/Content/Images/loading.gif"></td>
+                    </tr>
+                    <tr ng-repeat="x in salePersons">
+                        <td>{{x.SalePersonName}}</td>
+                        @*<td>{{x.StaffAddress}}</td>*@
+                        <td>{{x.SalePersonPhone}}</td>
+                        <td>{{x.Store.StoreName}}</td>
+                        <td>
+                            <button class="btn btn-default" type="button" ng-click="getStaff(x.SalePersonId)">
+                                <span class="glyphicon glyphicon-edit"></span>
+                            </button>
+                            <button class="btn btn-default" type="button" ng-click="deleteStaff(x.SalePersonId)">
+                                <span class="glyphicon glyphicon-remove"></span>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <button type="button" id="addButton"
+                    class="btn btn-primary"
+                    ng-click="addClick()">
+                Add Staff
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    Staff Information
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="name">Staff Name</label>
+                        <input type="text" id="name" name="name"
+                               class="form-control" ng-model="sta.SalePersonName" />
+                    </div>
+                    @*<div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address"
+                               class="form-control" ng-model="sta.StaffAddress" />
+                    </div>*@
+                    <div class="form-group">
+                        <label for="store">Store</label>
+                        <select id="store" class="form-control" ng-model="sta.Store" ng-options="x.StoreName for x in stores">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="text" id="price"
+                               class="form-control" ng-model="sta.SalePersonPhone" />
+                    </div>
+                </div>
+
+                <div class="panel-footer">
+                    <div class="row">
+                        <div class="col-xs-12">
+                            <button type="button" class="btn btn-primary"
+                                    ng-click="updateClick()">
+                                {{addText}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts
+    {
+    <script>
+        var app = angular.module('myApp', []);
+        var url = "/api/SalePersons/";
+        app.controller('myCtrl', function ($scope, $http) {
+            // Load entity list
+            $scope.loading = true;
+
+            $http.get("/api/Stores/").then(function (response) {
+                $scope.stores = response.data;
+                $scope.addClick();
+            });
+
+            // Reset entity update data
+            $scope.addClick = function () {
+                $scope.sta = new Object();
+                $scope.sta.SalePersonName = "";
+                $scope.sta.Store = $scope.stores[0];
+                $scope.addText = "Add";
+            };
+
+            $http.get(url).then(function (response) {
+                $scope.salePersons = response.data;
+                $scope.loading = false;
+            });
+
+            // Handle item update click
+            $scope.getStaff = function (id) {
+                $http.get(url + id).then(function (response) {
+                    $scope.sta = response.data;
+
+                    var i = $scope.stores.findIndex(function (e) {
+                        return e.StoreId == $scope.sta.Store.StoreId;
+                    });
+                    $scope.sta.Store = $scope.stores[i];
+
+                    $scope.addText = "Update";
+                });
+            };
+
+            // Handle add/update entity
+            $scope.updateClick = function () {
+                if ($scope.sta.SalePersonName == "")
+                {
+                    alert("Name cannot be empty");
+                    return;
+                }
+                if ($scope.addText == "Add") {
+                    $http.post(url, $scope.sta).then(function (response) {
+                        $scope.salePersonId.push(response.data);
+                        $scope.addClick();
+                    }, function (response) {
+                        alert("Cannot insert new staff.");
+                    });
+                }
+                else {
+                    $scope.sta.StoreId = $scope.sta.Store.StoreId;
+
+                    $http.put(url + $scope.sta.SalePersonId, $scope.sta).then(function (response) {
+                        var i = $scope.salePersonId.findIndex(function (element) {
+                            return element.SalePersonId == $scope.sta.SalePersonId;
+                        });
+                        $scope.salePersonId[i] = $scope.sta;
+                        $scope.addClick();
+                    }, function (response) {
+                        alert("Cannot update staff.");
+                    });
+                }
+            };
+
+            // Handle delete entity
+            $scope.deleteStaff = function (id) {
+                $http.delete(url + id).then(function (response) {
+                    var i = $scope.salePersonId.findIndex(function (element) {
+                        return element.SalePersonId == id;
+                    });
+                    $scope.salePersonId.splice(i, 1);
+                }, function (response) {
+                    alert("Cannot delete staff.");
+                });
+            };
+
+        });
+    </script>
+}
